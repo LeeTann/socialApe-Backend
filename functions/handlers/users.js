@@ -1,11 +1,12 @@
-const { db } = require('../utils/admin')
+const { db, admin } = require('../utils/admin')
 
 const config = require('../utils/config')
 const firebase = require('firebase')
 firebase.initializeApp(config)
 
-const { validateSignupData, validateLoginData } = require('../utils/validators')
+const { validateSignupData, validateLoginData, reduceUserDetails } = require('../utils/validators')
 
+// Signup users
 exports.signup = (req, res) => {
     const newUser = {
         email: req.body.email,
@@ -17,6 +18,8 @@ exports.signup = (req, res) => {
     const { valid, errors } = validateSignupData(newUser)
 
     if(!valid) return res.status(400).json(errors)
+
+    const noImage = 'blank-profile-picture.png'
 
     // validate data
     let token, userId
@@ -40,7 +43,8 @@ exports.signup = (req, res) => {
                 handle: newUser.handle,
                 email: newUser.email,
                 createdAt: new Date().toISOString(),
-                userId: userId
+                imageUrl: `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImage}?alt=media`,
+                userId: userId,
             }
             return db.doc(`/users/${newUser.handle}`).set(userCredentials)
         })
@@ -52,11 +56,12 @@ exports.signup = (req, res) => {
             if(err.code === 'auth/email-already-in-use') {
                 return res.status(400).json({ email: 'Email is already in use'})
             } else {
-                return res.status(500).json({ error: err.code })  
+                return res.status(500).json({ general: 'something went wrong, please try again' })  
             }      
         })
 }
 
+// Login users
 exports.login = (req, res) => {
     const user = {
         email: req.body.email,
@@ -84,4 +89,67 @@ exports.login = (req, res) => {
                 return res.status(500).json({error: err.code})
             }
         })
+}
+
+// Add user details
+exports.addUserDetails = (req, res) => {
+    let userDetails = reduceUserDetails(req.body)
+
+    db.doc(`/users/${req.user.handle}`).update(userDetails)
+        .then(() => {
+            return res.json({ message: 'Details add successfully' })
+        })
+        .catch(err => {
+
+        })
+}
+
+// Upload Image
+exports.uploadImage = (req, res) => {
+    const Busboy = require('busboy')
+    const path = require('path')
+    const os = require('os')
+    const fs = require('fs')
+
+    let imageFileName;
+    let imageToBeUploaded = {}
+
+    const busboy = new Busboy({ headers: req.headers })
+
+    busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+        if (mimetype !== 'image/jpeg' && mimetype !== 'image/png') {
+            return res.status(400).json({ error: 'Wrong file type submitted'})
+        }
+        // my.image.png
+        const imageExtenstion = filename.split('.').pop()
+        // 2131233211.png
+        imageFileName = `${Math.round(Math.random()*1000000000).toString()}.${imageExtenstion}`
+        const filepath = path.join(os.tmpdir(), imageFileName)
+        imageToBeUploaded = { filepath, mimetype }
+        file.pipe(fs.createWriteStream(filepath))
+    })
+
+    busboy.on('finish', () => {
+        admin.storage().bucket(`${config.storageBucket}`).upload(imageToBeUploaded.filepath, {
+            resumable: false,
+            metadata: {
+                metadata: {
+                    contentType: imageToBeUploaded.mimetype
+                }
+            }
+        })
+        .then(() => {
+            const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
+            return db.doc(`/users/${req.user.handle}`).update({ imageUrl })
+        })
+        .then(() => {
+            return res.json({ message: 'image uploaded successfully'})
+        })
+        .catch(err => {
+            console.error(err)
+            return res.status(500).json({ error: 'something went wrong'})
+        })
+    })
+
+    busboy.end(req.rawBody)
 }
