@@ -95,12 +95,14 @@ exports.login = (req, res) => {
 exports.addUserDetails = (req, res) => {
     let userDetails = reduceUserDetails(req.body)
 
-    db.doc(`/users/${req.user.handle}`).update(userDetails)
+    db.doc(`/users/${req.user.handle}`)
+        .update(userDetails)
         .then(() => {
             return res.json({ message: 'Details add successfully' })
         })
         .catch(err => {
-
+            console.error(err)
+            return res.status(500).json({error: err.code})
         })
 }
 
@@ -116,13 +118,14 @@ exports.uploadImage = (req, res) => {
 
     const busboy = new Busboy({ headers: req.headers })
 
+    // only need file, filename, and mimetype but need the rest or else our mimetype will be in the wrong order
     busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
         if (mimetype !== 'image/jpeg' && mimetype !== 'image/png') {
             return res.status(400).json({ error: 'Wrong file type submitted'})
         }
-        // my.image.png
+        // my.image.png - split at '.' and pop the png extention off and return it
         const imageExtenstion = filename.split('.').pop()
-        // 2131233211.png
+        // 2131233211.png - generates random filename .png
         imageFileName = `${Math.round(Math.random()*1000000000).toString()}.${imageExtenstion}`
         const filepath = path.join(os.tmpdir(), imageFileName)
         imageToBeUploaded = { filepath, mimetype }

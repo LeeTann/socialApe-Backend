@@ -50,7 +50,7 @@ exports.validateLoginData = (data) => {
 exports.reduceUserDetails = (data) => {
     let userDetails = {}
 
-    if(!isEmpty(deta.bio.trim())) userDetails.bio = data.bio
+    if(!isEmpty(data.bio.trim())) userDetails.bio = data.bio
     if(!isEmpty(data.website.trim())) {
         // https://website.com
         if(data.website.trim().substring(0, 4) !== 'http') {
