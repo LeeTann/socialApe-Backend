@@ -55,7 +55,7 @@ exports.getScream = (req, res) => {
         .get()
         .then(doc => {
             if (!doc.exists) {
-                return res.status(404).json({ error: 'Scream not found' })
+                return res.status(404).json({ error: 'Scream not found under getScream!!!!' })
             }
             screamData = doc.data()
             screamData.screamId = doc.id
@@ -93,11 +93,11 @@ exports.commentOnScream = (req, res) => {
     }
     console.log(newComment)
 
-    db.doc(`/scream/${req.params.screamId}`)
+    db.doc(`/screams/${req.params.screamId}`)
         .get()
         .then(doc => {
             if(!doc.exists) {
-                return res.status(404).json({ error: 'Scream not found' })
+                return res.status(404).json({ error: 'Scream not found under commentOnScream' })
             }
             return doc.ref.update({ commentCount: doc.data().commentCount + 1 })
         })
@@ -132,7 +132,7 @@ exports.likeScream = (req, res) => {
                 screamData.screamId = doc.id
                 return likeDocument.get()
             } else {
-                return res.status(404).json({ error: 'Scream not fount' })
+                return res.status(404).json({ error: 'Scream not found under likeScream' })
             }
         })
         .then(data => {
@@ -151,7 +151,7 @@ exports.likeScream = (req, res) => {
                         return res.json(screamData)
                     })
             } else {
-                return res.status(400).json({ error: 'Scream already liked' })
+                return res.status(400).json({ error: 'Scream already liked once. Can not like again!' })
             }
         })
         .catch((err) => {
@@ -179,12 +179,12 @@ exports.unlikeScream = (req, res) => {
                 screamData.screamId = doc.id
                 return likeDocument.get()
             } else {
-                return res.status(404).json({ error: 'Scream not found' })
+                return res.status(404).json({ error: 'Scream not found under UnlikeScream' })
             }
         })
         .then((data) => {
             if (data.empty) {
-                return res.status(400).json({ error: 'Scream not liked' })
+                return res.status(400).json({ error: 'Scream has not been liked yet. Cannot unlike' })
             } else {
                 return db
                     .doc(`/likes/${data.docs[0].id}`)
@@ -211,7 +211,7 @@ exports.deleteScream = (req, res) => {
         .get()
         .then((doc) => {
             if (!doc.exists) {
-                return res.status(404).json({ error: 'Scream not found' })
+                return res.status(404).json({ error: 'Scream not found Delete' })
             }
             if (doc.data().userHandle !== req.user.handle) {
                 return res.status(403).json({ error: 'Unauthorized' })
