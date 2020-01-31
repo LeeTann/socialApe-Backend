@@ -124,7 +124,7 @@ exports.likeScream = (req, res) => {
     const screamDocument = db.doc(`/screams/${req.params.screamId}`)
     let screamData
 
-    screamData
+    screamDocument
         .get()
         .then(doc => {
             if (doc.exists) {
@@ -168,10 +168,10 @@ exports.unlikeScream = (req, res) => {
         .where('screamId', '==', req.params.screamId)
         .limit(1)
 
-    const screamDocument = db.doc(`/scream/${req.params.screamId}`)
+    const screamDocument = db.doc(`/screams/${req.params.screamId}`)
     let screamData
 
-    screamData
+    screamDocument
         .get()
         .then((doc) => {
             if (doc.exists) {
@@ -184,10 +184,10 @@ exports.unlikeScream = (req, res) => {
         })
         .then((data) => {
             if (data.empty) {
-                return res.status(400).json({ error: 'Scream not found' })
+                return res.status(400).json({ error: 'Scream not liked' })
             } else {
                 return db
-                    .doc(`/likes/${data.doc[0].id}`)
+                    .doc(`/likes/${data.docs[0].id}`)
                     .delete()
                     .then(() => {
                         screamData.likeCount--
