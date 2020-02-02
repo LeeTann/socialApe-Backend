@@ -118,7 +118,7 @@ exports.onUserImageChange = functions
 
 exports.onScreamDelete = functions
     .region('us-central1')
-    .firestore.document('/users/{screamId}')
+    .firestore.document('/screams/{screamId}')
     .onDelete((snapshot, context) => {
         const screamId = context.params.screamId
         const batch = db.batch()

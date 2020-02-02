@@ -246,11 +246,14 @@ exports.uploadImage = (req, res) => {
 
 // Notifications marked as read
 exports.markNotificationsRead = (req, res) => {
+    // batch use to update multiple documents - array of strings
     let batch = db.batch()
+
     req.body.forEach((notificationId) => {
         const notification = db.doc(`/notifications/${notificationId}`)
         batch.update(notification, { read: true })
     })
+    // commit after notification has been updated to true
     batch.commit()
         .then(() => {
             return res.json({ message: 'Notifications marked read' })
